@@ -14,7 +14,9 @@ class Network(object):
     def feedforward(self, a):
         for i in range(self.num_layers - 2):
             a = sigmoid(np.dot(self.weights[i], a) + self.biases[i])
+        
         z = np.dot(self.weights[-1], a) + self.biases[-1]
+
         return softmax(z)
 
     def SGD(self, training_data, epochs, mini_batch_size, eta, test_data=None):
@@ -25,6 +27,7 @@ class Network(object):
             random.shuffle(training_data)
             mini_batches = [
                 training_data[k:k+mini_batch_size]
+
                 for k in range(0, n, mini_batch_size)]
             for mini_batch in mini_batches:
                 self.update_mini_batch(mini_batch, eta)
@@ -37,10 +40,12 @@ class Network(object):
     def update_mini_batch(self, mini_batch, eta):
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
+
         for x, y in mini_batch:
             delta_nabla_b, delta_nabla_w = self.backprop(x, y)
             nabla_b = [nb + dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
             nabla_w = [nw + dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
+        
         self.weights = [w - (eta / len(mini_batch)) * nw
                         for w, nw in zip(self.weights, nabla_w)]
         self.biases = [b - (eta / len(mini_batch)) * nb
@@ -58,17 +63,20 @@ class Network(object):
         for i in range(self.num_layers - 2):
             z = np.dot(self.weights[i], activation) + self.biases[i]
             zs.append(z)
+
             activation = sigmoid(z)
             activations.append(activation)
         
         # Final layer (softmax)
         z = np.dot(self.weights[-1], activation) + self.biases[-1]
         zs.append(z)
+
         activation = softmax(z)
         activations.append(activation)
 
         # Output error using cross-entropy derivative with softmax
         delta = activations[-1] - y  # simpler with softmax + cross-entropy
+
         nabla_b[-1] = delta
         nabla_w[-1] = np.dot(delta, activations[-2].transpose())
 
@@ -76,7 +84,9 @@ class Network(object):
         for l in range(2, self.num_layers):
             z = zs[-l]
             sp = sigmoid_prime(z)
+
             delta = np.dot(self.weights[-l+1].transpose(), delta) * sp
+
             nabla_b[-l] = delta
             nabla_w[-l] = np.dot(delta, activations[-l-1].transpose())
 
@@ -85,6 +95,7 @@ class Network(object):
     def evaluate(self, test_data):
         test_results = [(np.argmax(self.feedforward(x)), y)
                         for (x, y) in test_data]
+        
         return sum(int(x == y) for (x, y) in test_results)
 
     def cost_derivative(self, output_activations, y):
@@ -105,10 +116,12 @@ def sigmoid_prime(z):
 def vectorized_result(j):
     e = np.zeros((10, 1))
     e[j] = 1.0
+
     return e
 
 def load_data():
-    mndata = MNIST(os.path.join(os.path.dirname(__file__), 'mnist'))  # <-- this sets the correct folder path
+    mndata = MNIST(os.path.join(os.path.dirname(__file__), 'mnist'))
+
     images, labels = mndata.load_training()
     test_images, test_labels = mndata.load_testing()
 
@@ -116,23 +129,29 @@ def load_data():
                      for x, y in zip(images, labels)]
     test_data = [(np.reshape(np.array(x), (784, 1)) / 255.0, y)
                  for x, y in zip(test_images, test_labels)]
+    
     return training_data, test_data
 
 def train_and_save():
     training_data, test_data = load_data()
     net = Network([784, 30, 10])
     net.SGD(training_data, epochs=12, mini_batch_size=10, eta=3.0, test_data=test_data)
-    print([w.shape for w in net.weights])  # Check the shapes of the weight matrices
+
+    print([w.shape for w in net.weights])
+
     np.save("weights.npy", np.array(net.weights, dtype=object), allow_pickle=True)
     np.save("biases.npy", np.array(net.biases, dtype=object), allow_pickle=True)
+
     print(net.evaluate(test_data) / len(test_data))
 
 
 
 def load_trained_network():
     net = Network([784, 30, 10])
+
     net.weights = np.load("weights.npy", allow_pickle=True)
     net.biases = np.load("biases.npy", allow_pickle=True)
+
     return net
 
 if __name__ == "__main__":
